@@ -610,6 +610,8 @@ async function handleUrl() {
     });
     const data = await res.json();
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    console.log('URL fetch raw response:', JSON.stringify(data).slice(0, 500));
+    console.log('URL fetch text:', text.slice(0, 500));
 
     // Try to parse directly as JSON first
     try {
@@ -620,7 +622,7 @@ async function handleUrl() {
         await lookupBloomData(plants);
         return;
       }
-    } catch(e) {}
+    } catch(e) { console.log('JSON parse failed:', e.message, 'text was:', text.slice(0,200)); }
 
     pageText = text;
   } catch(e) {
@@ -696,9 +698,11 @@ async function extractAndLookup(input) {
 
   let plants = [];
   try {
-    const raw = await callClaude(messages, 1000, input.type === 'url');
+    const raw = await callClaude(messages, 1000, false);
+    console.log('extractAndLookup raw:', raw.slice(0, 300));
     plants = JSON.parse(raw.trim().replace(/```json|```/g, '').trim());
   } catch(e) {
+    console.log('extractAndLookup parse error:', e.message);
     showStatus('lookup-status', 'error', 'Could not identify plant names. Try a clearer photo or different file.');
     return;
   }
