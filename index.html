@@ -562,6 +562,51 @@ async function lookupZone(zip) {
   return z;
 }
 
+// ── FILE HANDLING ─────────────────────────────────────────────────────────────
+async function handleFile(file) {
+  if (!file) return;
+  if (!checkZone()) return;
+
+  const isPdf = file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+  if (!isPdf && !isImage) {
+    showStatus('lookup-status', 'error', 'Please upload a photo or PDF file.');
+    return;
+  }
+
+  showStatus('lookup-status', 'loading', isPdf ? 'Reading PDF…' : 'Reading image…');
+  const base64 = await fileToBase64(file);
+
+  if (isImage) {
+    await extractAndLookup({ type: 'image', base64, mediaType: file.type });
+  } else {
+    showStatus('lookup-status', 'loading', 'Extracting text from PDF…');
+    try {
+      const text = await extractPdfText(base64);
+      await extractAndLookup({ type: 'text', text });
+    } catch(e) {
+      showStatus('lookup-status', 'error', 'Could not read PDF. Try a photo of the plant list instead.');
+    }
+  }
+}
+
+async function handleUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  if (!checkZone()) return;
+  showStatus('lookup-status', 'loading', 'Fetching page content…');
+  await extractAndLookup({ type: 'url', url });
+}
+
+function checkZone() {
+  if (!zone) {
+    showZoneModal();
+    showStatus('lookup-status', 'error', 'Please set your zip code first so we can show accurate bloom times.');
+    return false;
+  }
+  return true;
+}
+
 // ── CORE: EXTRACT PLANTS + LOOKUP BLOOM DATA ──────────────────────────────────
 async function extractAndLookup(input) {
   showStatus('lookup-status', 'loading', 'Identifying plant names…');
