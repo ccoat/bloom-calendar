@@ -591,7 +591,44 @@ async function handleUrl() {
   if (!url) return;
   if (!checkZone()) return;
   showStatus('lookup-status', 'loading', 'Fetching page content…');
-  await extractAndLookup({ type: 'url', url });
+
+  // Fetch the page content via our Worker (avoids CORS issues)
+  let pageText = '';
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `Search for and retrieve the content from this URL: ${url}. Return ALL plant names you find on the page as a JSON array of strings only. No other text, no markdown.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+    // Try to parse directly as JSON first
+    try {
+      const plants = JSON.parse(text.trim().replace(/```json|```/g, '').trim());
+      if (Array.isArray(plants) && plants.length > 0) {
+        lookupResults = [];
+        showStatus('lookup-status', 'loading', `Found ${plants.length} plants. Looking up bloom data for Zone ${zone}…`);
+        await lookupBloomData(plants);
+        return;
+      }
+    } catch(e) {}
+
+    pageText = text;
+  } catch(e) {
+    showStatus('lookup-status', 'error', 'Could not fetch that URL. Try uploading a PDF or photo instead.');
+    return;
+  }
+
+  await extractAndLookup({ type: 'text', text: pageText });
 }
 
 function checkZone() {
@@ -601,6 +638,33 @@ function checkZone() {
     return false;
   }
   return true;
+}
+
+async function lookupBloomData(plants) {
+  try {
+    const bloomRaw = await callClaude([{
+      role: 'user',
+      content: `For each plant below, provide bloom data specifically for USDA Hardiness Zone ${zone}.
+
+Return ONLY a JSON array. No other text, no markdown.
+
+Each item must have:
+- "name": the plant name as given
+- "bloomMonths": array of month numbers 1-12 when it blooms in Zone ${zone}. Empty array [] if it doesn't flower or is unknown.
+- "color": primary flower color. Use only: white, yellow, orange, red, pink, purple, blue, lavender, magenta, green, mixed. Use "unknown" if unsure.
+- "light": one of "full sun", "part sun", "shade", or "any"
+- "soil": one of "dry", "medium", "wet", or "any"
+- "known": true if you have reliable data, false if you're uncertain
+
+Plants: ${plants.join(', ')}`
+    }], 2000);
+    const bloomData = JSON.parse(bloomRaw.trim().replace(/```json|```/g, '').trim());
+    lookupResults = bloomData;
+    showStatus('lookup-status', 'success', `Found bloom data for ${bloomData.filter(p=>p.known).length} of ${bloomData.length} plants.`);
+    renderLookupCalendar(bloomData);
+  } catch(e) {
+    showStatus('lookup-status', 'error', 'Could not look up bloom data. Please try again.');
+  }
 }
 
 // ── CORE: EXTRACT PLANTS + LOOKUP BLOOM DATA ──────────────────────────────────
@@ -626,7 +690,7 @@ async function extractAndLookup(input) {
   } else if (input.type === 'url') {
     messages = [{
       role: 'user',
-      content: `Visit this URL and extract all plant names listed on the page: ${input.url}\n\nReturn ONLY a JSON array of plant name strings. No other text, no markdown.`
+      content: `Extract all plant names from this webpage content. Return ONLY a JSON array of strings. No other text, no markdown.\n\nPage content:\n${input.pageText.slice(0, 8000)}`
     }];
   }
 
@@ -645,35 +709,7 @@ async function extractAndLookup(input) {
   }
 
   showStatus('lookup-status', 'loading', `Found ${plants.length} plants. Looking up bloom data for Zone ${zone}…`);
-
-  // Look up bloom data for all plants
-  let bloomData = [];
-  try {
-    const bloomRaw = await callClaude([{
-      role: 'user',
-      content: `For each plant below, provide bloom data specifically for USDA Hardiness Zone ${zone}.
-
-Return ONLY a JSON array. No other text, no markdown.
-
-Each item must have:
-- "name": the plant name as given
-- "bloomMonths": array of month numbers 1-12 when it blooms in Zone ${zone}. Empty array [] if it doesn't flower or is unknown.
-- "color": primary flower color. Use only: white, yellow, orange, red, pink, purple, blue, lavender, magenta, green, mixed. Use "unknown" if unsure.
-- "light": one of "full sun", "part sun", "shade", or "any"
-- "soil": one of "dry", "medium", "wet", or "any"
-- "known": true if you have reliable data, false if you're uncertain
-
-Plants: ${plants.join(', ')}`
-    }], 2000);
-    bloomData = JSON.parse(bloomRaw.trim().replace(/```json|```/g, '').trim());
-  } catch(e) {
-    showStatus('lookup-status', 'error', 'Could not look up bloom data. Please try again.');
-    return;
-  }
-
-  lookupResults = bloomData;
-  showStatus('lookup-status', 'success', `Found bloom data for ${bloomData.filter(p=>p.known).length} of ${bloomData.length} plants.`);
-  renderLookupCalendar(bloomData);
+  await lookupBloomData(plants);
 }
 
 // ── RENDER LOOKUP CALENDAR ────────────────────────────────────────────────────
