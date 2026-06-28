@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom Calendar — Know When Your Plants Flower</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --green-dark: #2d5016;
+  --green-mid: #4a7c2f;
+  --green-light: #7ab648;
+  --green-pale: #eef6e6;
+  --cream: #faf8f3;
+  --ink: #1c1c18;
+  --ink-mid: #5a5a52;
+  --ink-light: #9a9a90;
+  --border: #ddddd0;
+  --white: #ffffff;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--green-dark);
+  color: white;
+  padding: 1.25rem 1rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
+.header-left { flex: 1; }
+
+.zone-badge {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  color: white;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.zone-badge:hover { background: rgba(255,255,255,0.2); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  flex: 1;
+  min-width: 80px;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-mid);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tab.active {
+  color: var(--green-mid);
+  border-bottom-color: var(--green-mid);
+}
+.tab-icon { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+
+/* ── PANELS ── */
+.panel { display: none; padding: 1rem; }
+.panel.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.card p { font-size: 0.85rem; color: var(--ink-mid); line-height: 1.6; }
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--green-pale);
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--green-light); background: #e0f0d0; }
+.upload-icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+.upload-zone h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+.upload-zone p { font-size: 0.82rem; color: var(--ink-mid); }
+
+.or-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  color: var(--ink-light);
+  font-size: 0.82rem;
+}
+.or-row::before, .or-row::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.url-row { display: flex; gap: 0.5rem; }
+.url-row input {
+  flex: 1;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+.url-row input:focus { border-color: var(--green-mid); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  text-decoration: none;
+}
+.btn-primary { background: var(--green-mid); color: white; width: 100%; margin-top: 0.75rem; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-primary:disabled { background: var(--border); color: var(--ink-light); cursor: not-allowed; }
+.btn-outline { background: white; color: var(--green-mid); border: 1px solid var(--green-mid); }
+.btn-outline:hover { background: var(--green-pale); }
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.78rem; }
+
+/* ── STATUS ── */
+.status {
+  font-size: 0.82rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  display: none;
+}
+.status.show { display: block; }
+.status.loading { background: #e8f0fe; color: #1a56a8; }
+.status.error { background: #fde8e8; color: #c0392b; }
+.status.success { background: #e6f4e6; color: #1a6a1a; }
+
+/* ── CALENDAR ── */
+.calendar-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.month-grid {
+  display: grid;
+  gap: 2px;
+  min-width: 560px;
+  font-size: 11px;
+}
+
+.cell {
+  padding: 5px 3px;
+  text-align: center;
+  border-radius: 3px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plant-label {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  font-size: 11px;
+  color: var(--ink);
+  padding-right: 6px;
+  word-break: break-word;
+  line-height: 1.3;
+  gap: 4px;
+}
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.fav-btn:hover, .fav-btn.active { opacity: 1; }
+
+.header-cell {
+  color: var(--ink-light);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bloom-cell { position: relative; }
+.bloom-cell.mine { opacity: 1; }
+.bloom-cell.new-plant { opacity: 0.7; }
+.bloom-cell.gap-fill { box-shadow: 0 0 0 2px #f59e0b; }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0.75rem;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ink-mid);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── GAP CALLOUTS ── */
+.gap-callouts { margin-top: 1rem; }
+.gap-callout {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+}
+.gap-callout strong { color: #92400e; }
+
+/* ── FILTERS ── */
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.filter-chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.filter-chip.active { background: var(--green-mid); color: white; border-color: var(--green-mid); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-light);
+}
+.empty-state .icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+.empty-state p { font-size: 0.875rem; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  display: none;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white;
+  border-radius: 16px 16px 0 0;
+  padding: 1.5rem 1.25rem 2rem;
+  width: 100%;
+  max-width: 480px;
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.modal p { font-size: 0.85rem; color: var(--ink-mid); margin-bottom: 1rem; }
+.modal input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 0.75rem;
+}
+.modal input:focus { border-color: var(--green-mid); }
+.modal-hint { font-size: 0.78rem; color: var(--ink-light); margin-top: 0.5rem; }
+
+/* ── UNKNOWN ROW ── */
+.unknown-row { background: #f8f8f6; opacity: 0.6; }
+.unknown-label { font-style: italic; color: var(--ink-light); }
+
+/* ── PLANT COUNT ── */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-light);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 600px) {
+  .panel { padding: 1.25rem; max-width: 700px; margin: 0 auto; }
+  header { padding: 1.5rem 1.5rem 1.25rem; }
+  .tabs { justify-content: center; }
+  .tab { flex: none; padding: 0.75rem 2rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>🌸 Bloom Calendar</h1>
+    <p>Know when your plants flower</p>
+  </div>
+  <button class="zone-badge" onclick="showZoneModal()" id="zone-display">Set your zone →</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('lookup')">
+    <span class="tab-icon">🔍</span>Look up
+  </div>
+  <div class="tab" onclick="switchTab('mygarden')">
+    <span class="tab-icon">🌿</span>My garden
+  </div>
+  <div class="tab" onclick="switchTab('compare')">
+    <span class="tab-icon">✨</span>Compare
+  </div>
+</div>
+
+<!-- ══ LOOKUP TAB ══ -->
+<div class="panel active" id="panel-lookup">
+  <div class="card">
+    <h2>Upload a plant list</h2>
+    <p>Photo, PDF, or paste a URL from a nursery website. We'll look up bloom times and colors for each plant.</p>
+  </div>
+
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <span class="upload-icon">📷</span>
+    <h3>Tap to upload</h3>
+    <p>Photo of a plant list, nursery tag, or PDF catalog</p>
+  </div>
+  <input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
+
+  <div class="or-row">or paste a URL</div>
+
+  <div class="url-row">
+    <input type="url" id="url-input" placeholder="https://nursery.com/plant-list">
+    <button class="btn btn-outline" id="url-go-btn">Go</button>
+  </div>
+
+  <div class="status" id="lookup-status"></div>
+
+  <div id="lookup-results" style="display:none; margin-top:1rem;">
+    <div class="section-label">
+      <span id="result-count">0 plants found</span>
+      <button class="btn btn-outline btn-sm" onclick="clearLookup()">Clear</button>
+    </div>
+    <div class="calendar-wrap">
+      <div class="month-grid" id="lookup-grid"></div>
+    </div>
+    <div class="legend" id="lookup-legend"></div>
+    <div class="gap-callouts" id="gap-callouts"></div>
+  </div>
+</div>
+
+<!-- ══ MY GARDEN TAB ══ -->
+<div class="panel" id="panel-mygarden">
+  <div id="garden-empty" class="empty-state">
+    <span class="icon">🌱</span>
+    <p>Your saved plants appear here.<br>Look up a plant list and tap ☆ to save plants to your garden.</p>
+  </div>
+  <div id="garden-content" style="display:none">
+    <div class="section-label">
+      <span id="garden-count"></span>
+      <button class="btn btn-outline btn-sm" onclick="clearGarden()">Clear all</button>
+    </div>
+    <div class="calendar-wrap">
+      <div class="month-grid" id="garden-grid"></div>
+    </div>
+    <div class="legend" id="garden-legend"></div>
+  </div>
+</div>
+
+<!-- ══ COMPARE TAB ══ -->
+<div class="panel" id="panel-compare">
+  <div id="compare-empty" class="empty-state">
+    <span class="icon">✨</span>
+    <p>Save plants to your garden first, then look up a new plant list to see how new plants fill your bloom gaps.</p>
+  </div>
+  <div id="compare-content" style="display:none">
+    <div class="filters" id="compare-filters"></div>
+    <div class="section-label">
+      <span id="compare-count"></span>
+    </div>
+    <div class="calendar-wrap">
+      <div class="month-grid" id="compare-grid"></div>
+    </div>
+    <div class="legend" id="compare-legend"></div>
+    <div class="gap-callouts" id="compare-gap-callouts"></div>
+  </div>
+</div>
+
+<!-- ══ ZONE MODAL ══ -->
+<div class="modal-overlay" id="zone-modal">
+  <div class="modal">
+    <h2>What's your zip code?</h2>
+    <p>We use this to show bloom times accurate for your region. Saved on this device.</p>
+    <input type="text" id="zip-input" placeholder="e.g. 60601" maxlength="5" inputmode="numeric"
+      onkeydown="if(event.key==='Enter') saveZone()">
+    <button class="btn btn-primary" onclick="saveZone()">Save</button>
+    <p class="modal-hint" id="zone-result"></p>
+  </div>
+</div>
+
+<script>
+// ── WORKER URL ────────────────────────────────────────────────────────────────
+const WORKER_URL = "https://plant-bloom-proxy.cgcoatney.workers.dev/";
+
+// ── COLOR MAP ─────────────────────────────────────────────────────────────────
+const COLOR_MAP = {
+  white:    {bg:'#f1f5f9', border:'#94a3b8'},
+  yellow:   {bg:'#fef08a', border:'#ca8a04'},
+  orange:   {bg:'#fed7aa', border:'#ea580c'},
+  red:      {bg:'#fca5a5', border:'#dc2626'},
+  pink:     {bg:'#fbcfe8', border:'#db2777'},
+  purple:   {bg:'#d8b4fe', border:'#9333ea'},
+  blue:     {bg:'#bfdbfe', border:'#2563eb'},
+  lavender: {bg:'#e9d5ff', border:'#a855f7'},
+  magenta:  {bg:'#f9a8d4', border:'#ec4899'},
+  green:    {bg:'#bbf7d0', border:'#16a34a'},
+  mixed:    {bg:'#e2e8f0', border:'#64748b'},
+  unknown:  {bg:'#f3f4f6', border:'#d1d5db'},
+};
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let zone = localStorage.getItem('bloom_zone') || null;
+let zipCode = localStorage.getItem('bloom_zip') || null;
+let favorites = JSON.parse(localStorage.getItem('bloom_favorites') || '[]');
+let lookupResults = [];
+
+// ── ZONE ──────────────────────────────────────────────────────────────────────
+function updateZoneDisplay() {
+  const el = document.getElementById('zone-display');
+  if (zone && zipCode) {
+    el.textContent = `📍 ${zipCode} · Zone ${zone}`;
+  } else {
+    el.textContent = 'Set your zone →';
+  }
+}
+
+function showZoneModal() {
+  document.getElementById('zone-modal').classList.add('show');
+  document.getElementById('zip-input').focus();
+  if (zipCode) document.getElementById('zip-input').value = zipCode;
+}
+
+function hideZoneModal() {
+  document.getElementById('zone-modal').classList.remove('show');
+}
+
+document.getElementById('zone-modal').addEventListener('click', function(e) {
+  if (e.target === this) hideZoneModal();
+});
+
+async function saveZone() {
+  const zip = document.getElementById('zip-input').value.trim();
+  if (!/^\d{5}$/.test(zip)) {
+    document.getElementById('zone-result').textContent = 'Please enter a valid 5-digit zip code.';
+    return;
+  }
+  document.getElementById('zone-result').textContent = 'Looking up your zone…';
+  const z = await lookupZone(zip);
+  if (z) {
+    zone = z;
+    zipCode = zip;
+    localStorage.setItem('bloom_zone', zone);
+    localStorage.setItem('bloom_zip', zipCode);
+    document.getElementById('zone-result').textContent = `✓ Zone ${zone} saved.`;
+    updateZoneDisplay();
+    setTimeout(hideZoneModal, 800);
+  } else {
+    document.getElementById('zone-result').textContent = 'Zip code not found. Try a nearby zip.';
+  }
+}
+
+// Hardiness zone lookup — bundled data (abbreviated; full 40k zip version would be separate JSON)
+// This uses Claude to look up the zone when not in local cache
+
+// ── ZIP → ZONE LOOKUP (bundled, no API call needed) ──────────────────────────
+const ZIP_ZONE_MAP = {"995": "3a", "996": "4a", "997": "4b", "998": "5a", "999": "5b", "967": "11b", "968": "12a", "980": "8b", "981": "8b", "982": "7b", "983": "6b", "984": "8a", "985": "8a", "986": "7a", "987": "6a", "988": "5b", "989": "5a", "990": "5a", "991": "5a", "992": "5b", "993": "6a", "994": "5a", "970": "8b", "971": "8b", "972": "8a", "973": "7a", "974": "7b", "975": "7b", "976": "8a", "977": "7b", "978": "6a", "979": "7a", "900": "10b", "901": "10b", "902": "10b", "903": "10b", "904": "10b", "905": "10b", "906": "10b", "907": "10b", "908": "10b", "910": "10a", "911": "10a", "912": "10a", "913": "10a", "914": "10a", "915": "9b", "916": "9b", "917": "9b", "918": "9b", "919": "10a", "920": "10a", "921": "10a", "922": "10a", "923": "9b", "924": "9b", "925": "9b", "926": "10a", "927": "10a", "928": "9a", "930": "9b", "931": "9b", "932": "9a", "933": "9a", "934": "9b", "935": "9a", "936": "9a", "937": "9a", "938": "9a", "939": "9b", "940": "10a", "941": "10a", "942": "9b", "943": "9b", "944": "9b", "945": "9b", "946": "9b", "947": "9b", "948": "9b", "949": "9b", "950": "9b", "951": "9b", "952": "9b", "953": "9b", "954": "9b", "955": "7a", "956": "9b", "957": "9b", "958": "9b", "959": "8b", "960": "6b", "961": "6a", "889": "9a", "890": "9a", "891": "9a", "893": "7b", "894": "7a", "895": "7a", "897": "7a", "898": "6b", "850": "9b", "851": "9b", "852": "9b", "853": "9a", "855": "7a", "856": "8a", "857": "8a", "859": "5b", "860": "6b", "863": "9b", "864": "9a", "865": "7b", "840": "7b", "841": "7b", "842": "6b", "843": "5b", "844": "5a", "845": "6a", "846": "6b", "847": "6b", "800": "6b", "801": "6b", "802": "6b", "803": "5b", "804": "5a", "805": "5b", "806": "5b", "807": "4b", "808": "4a", "809": "4b", "810": "5b", "811": "5b", "812": "5b", "813": "4b", "814": "4a", "815": "5a", "816": "5b", "870": "7b", "871": "7b", "872": "7a", "873": "7a", "874": "6b", "875": "7b", "877": "6b", "878": "7b", "879": "7b", "880": "8a", "881": "7a", "882": "6a", "883": "6b", "884": "6b", "590": "4b", "591": "4b", "592": "4a", "593": "4b", "594": "4a", "595": "3b", "596": "4a", "597": "4b", "598": "4b", "599": "3b", "820": "4b", "821": "4b", "822": "4b", "823": "4a", "824": "4b", "825": "5a", "826": "4b", "827": "4b", "828": "4b", "829": "5a", "830": "5a", "831": "5a", "580": "4a", "581": "4a", "582": "3b", "583": "4a", "584": "4a", "585": "4a", "586": "3b", "587": "3b", "588": "3b", "570": "4b", "571": "4b", "572": "4b", "573": "4b", "574": "4b", "575": "4a", "576": "4a", "577": "3b", "680": "5b", "681": "5b", "683": "5b", "684": "5a", "685": "5a", "686": "5a", "687": "5a", "688": "4b", "689": "5a", "690": "5b", "691": "5a", "692": "4b", "693": "4b", "660": "6a", "661": "6a", "662": "6a", "664": "6a", "665": "6a", "666": "6a", "667": "6a", "668": "6a", "669": "5b", "670": "6b", "671": "6b", "672": "6b", "673": "6a", "674": "6a", "675": "6a", "676": "6a", "677": "5b", "678": "5b", "679": "5b", "730": "7a", "731": "7a", "734": "7a", "735": "7a", "736": "7a", "737": "7a", "738": "7a", "739": "7a", "740": "7a", "741": "7a", "743": "7a", "744": "7a", "745": "7b", "746": "7a", "747": "7b", "748": "7b", "749": "7b", "750": "8a", "751": "8a", "752": "8a", "753": "8a", "754": "8a", "755": "8a", "756": "8a", "757": "8a", "758": "8a", "759": "8a", "760": "8a", "761": "8a", "762": "8a", "763": "8a", "764": "8a", "765": "8a", "766": "8a", "767": "8a", "768": "8a", "769": "8a", "770": "9a", "771": "9a", "772": "9b", "773": "9a", "774": "9a", "775": "9a", "776": "9a", "777": "9a", "778": "9a", "779": "9a", "780": "8b", "781": "8b", "782": "8b", "783": "9a", "784": "9a", "785": "8b", "786": "8b", "787": "8b", "788": "8a", "789": "8a", "790": "7b", "791": "7b", "792": "7b", "793": "7a", "794": "7a", "795": "7b", "796": "7b", "797": "7b", "798": "8a", "799": "8a", "550": "5a", "551": "5a", "553": "4b", "554": "4b", "556": "4a", "557": "4a", "558": "4a", "559": "4b", "560": "4a", "561": "4a", "562": "4a", "563": "4b", "564": "4a", "565": "3b", "566": "3b", "567": "3b", "500": "5b", "501": "5b", "502": "5b", "503": "5b", "504": "5b", "505": "5a", "506": "5a", "507": "5a", "508": "5a", "510": "5b", "511": "5a", "512": "5b", "513": "5b", "514": "5b", "515": "5b", "516": "5b", "520": "5b", "521": "5b", "522": "5b", "523": "5b", "524": "5b", "525": "5b", "526": "5b", "527": "5b", "528": "5b", "630": "6a", "631": "6a", "633": "6a", "634": "6a", "635": "6a", "636": "6a", "637": "6a", "638": "6a", "639": "6a", "640": "6a", "641": "6a", "644": "6a", "645": "6a", "646": "6a", "647": "6a", "648": "6a", "650": "6a", "651": "6a", "652": "6a", "653": "6a", "654": "6a", "655": "6a", "656": "6a", "657": "6a", "658": "6a", "530": "5b", "531": "5b", "532": "5a", "534": "5a", "535": "5a", "537": "5a", "538": "5a", "539": "5a", "540": "5a", "541": "5a", "542": "5a", "543": "4b", "544": "4b", "545": "4a", "546": "4b", "547": "4b", "548": "4b", "549": "5a", "600": "5b", "601": "5b", "602": "5b", "603": "5b", "604": "5b", "605": "5b", "606": "5b", "607": "5b", "608": "5a", "609": "5b", "610": "5b", "611": "5b", "612": "5b", "613": "5b", "614": "5b", "615": "5b", "616": "5b", "617": "5b", "618": "6a", "619": "6a", "620": "6a", "622": "6a", "623": "6a", "624": "6a", "625": "5b", "626": "5b", "627": "5b", "628": "5b", "629": "6a", "480": "6a", "481": "6a", "482": "6a", "483": "6a", "484": "6a", "485": "6a", "486": "6a", "487": "6a", "488": "6a", "489": "6a", "490": "5b", "491": "5b", "492": "5b", "493": "5b", "494": "5b", "495": "5b", "496": "5b", "497": "5a", "498": "5a", "499": "5a", "460": "5b", "461": "5b", "462": "5b", "463": "6a", "464": "5b", "465": "5b", "466": "5b", "467": "5b", "468": "5b", "469": "5b", "470": "6a", "471": "6a", "472": "6a", "473": "6a", "474": "6a", "475": "6a", "476": "6a", "477": "6a", "478": "6a", "479": "6a", "430": "6a", "431": "6a", "432": "6a", "433": "6a", "434": "6a", "435": "6a", "436": "6a", "437": "6a", "438": "5b", "439": "5b", "440": "6a", "441": "6a", "442": "6a", "443": "6a", "444": "6a", "445": "6a", "446": "6a", "447": "6a", "448": "6a", "449": "6a", "450": "6b", "451": "6b", "452": "6b", "453": "6a", "454": "6a", "455": "6a", "456": "6a", "457": "6a", "458": "6a", "400": "6b", "401": "6b", "402": "6b", "403": "6b", "404": "6a", "405": "6a", "406": "6b", "407": "6a", "408": "6a", "409": "6a", "410": "6b", "411": "6a", "412": "6a", "413": "6a", "414": "6a", "415": "6b", "416": "6a", "417": "6a", "418": "6a", "420": "6b", "421": "6b", "422": "6b", "423": "6b", "424": "6b", "425": "6a", "426": "6a", "427": "6a", "370": "7a", "371": "7a", "372": "7a", "373": "7a", "374": "7a", "376": "7a", "377": "7a", "378": "6b", "379": "7a", "380": "7b", "381": "7b", "382": "7a", "383": "7a", "384": "7a", "385": "7a", "386": "7b", "387": "7b", "388": "8a", "389": "8a", "390": "8b", "391": "8b", "392": "8b", "393": "8a", "394": "8a", "395": "8b", "396": "8a", "397": "7b", "350": "7b", "351": "7b", "352": "7b", "354": "8a", "355": "7b", "356": "7b", "357": "7a", "358": "7b", "359": "8a", "360": "8a", "361": "8a", "362": "8a", "363": "8a", "364": "8a", "365": "8b", "366": "8b", "367": "8a", "368": "8a", "369": "8a", "300": "8a", "301": "8a", "302": "8a", "303": "8a", "304": "7b", "305": "8a", "306": "8a", "307": "7b", "308": "8b", "309": "8b", "310": "8b", "311": "8a", "312": "8a", "313": "8b", "314": "8b", "315": "8b", "316": "8a", "317": "8a", "318": "8b", "319": "8b", "320": "9a", "321": "9b", "322": "9a", "323": "8b", "324": "8b", "325": "8b", "326": "9a", "327": "9b", "328": "9b", "329": "9b", "330": "10b", "331": "10b", "332": "10b", "333": "10a", "334": "10a", "335": "9b", "336": "9a", "337": "9a", "338": "9b", "339": "10a", "341": "10a", "342": "9b", "344": "9b", "346": "10a", "347": "9b", "349": "9b", "290": "8a", "291": "8a", "292": "8a", "293": "7b", "294": "8a", "295": "8a", "296": "7b", "297": "7b", "298": "7b", "299": "8b", "270": "7b", "271": "7a", "272": "7b", "273": "7b", "274": "7b", "275": "7b", "276": "7b", "277": "7b", "278": "8a", "279": "8a", "280": "7b", "281": "7b", "282": "7a", "283": "7a", "284": "8a", "285": "8a", "286": "7a", "287": "6b", "288": "6b", "289": "8a", "200": "7a", "201": "7a", "202": "7a", "203": "7a", "204": "7a", "205": "7a", "206": "7a", "207": "7a", "208": "7a", "209": "7a", "220": "7a", "221": "7a", "222": "7a", "223": "7a", "224": "7a", "225": "7a", "226": "7a", "227": "7a", "228": "7a", "229": "7a", "230": "7b", "231": "7b", "232": "7b", "233": "8a", "234": "8a", "235": "7b", "236": "7b", "237": "7b", "238": "7a", "239": "7b", "240": "6b", "241": "6b", "242": "6b", "243": "6b", "244": "6b", "245": "6b", "246": "6a", "247": "6a", "248": "6a", "249": "6a", "250": "6b", "251": "6b", "252": "6b", "253": "6a", "254": "6a", "255": "6a", "256": "6a", "257": "6a", "258": "6a", "259": "6a", "260": "6a", "261": "6a", "262": "6a", "263": "6a", "264": "6a", "265": "6a", "266": "6a", "267": "6a", "268": "6a", "210": "7a", "211": "7a", "212": "7a", "214": "7a", "215": "6b", "216": "6b", "217": "6b", "218": "6b", "219": "7a", "197": "7a", "198": "7a", "199": "7a", "150": "6a", "151": "6a", "152": "6a", "153": "6a", "154": "6a", "155": "6a", "156": "6a", "157": "6a", "158": "6a", "159": "6a", "160": "6a", "161": "6a", "162": "6a", "163": "6a", "164": "6a", "165": "6a", "166": "6a", "167": "5b", "168": "5b", "169": "6a", "170": "6b", "171": "6b", "172": "6b", "173": "6b", "174": "6b", "175": "6b", "176": "6b", "177": "6a", "178": "6b", "179": "6b", "180": "6b", "181": "6b", "182": "6a", "183": "6b", "184": "6a", "185": "6a", "186": "6a", "187": "6a", "188": "6b", "189": "6b", "190": "7a", "191": "7a", "192": "7a", "193": "6b", "194": "6b", "195": "6b", "196": "6b", "070": "7a", "071": "7a", "072": "7a", "073": "7a", "074": "7a", "075": "7a", "076": "7a", "077": "7a", "078": "6b", "079": "6b", "080": "7a", "081": "7a", "082": "7a", "083": "7a", "084": "7a", "085": "7a", "086": "7a", "087": "7a", "088": "7a", "089": "7a", "100": "7b", "101": "7b", "102": "7b", "103": "7a", "104": "7a", "105": "7a", "106": "6b", "107": "7a", "108": "7a", "109": "7a", "110": "7a", "111": "7a", "112": "7a", "113": "7a", "114": "7a", "115": "7a", "116": "7a", "117": "7a", "118": "7a", "119": "7a", "120": "5b", "121": "5b", "122": "5b", "123": "5b", "124": "6b", "125": "6b", "126": "6a", "127": "5b", "128": "5a", "129": "5a", "130": "5b", "131": "5b", "132": "5b", "133": "5a", "134": "5a", "135": "5a", "136": "5a", "137": "5b", "138": "5a", "139": "5a", "140": "6a", "141": "6a", "142": "6a", "143": "6a", "144": "6a", "145": "5b", "146": "6a", "147": "5b", "148": "5b", "149": "5a", "060": "6b", "061": "6a", "062": "6b", "063": "7a", "064": "7a", "065": "6a", "066": "6a", "067": "6a", "068": "7a", "069": "7a", "028": "7a", "029": "7a", "010": "6a", "011": "6a", "012": "6a", "013": "6a", "014": "6a", "015": "6a", "016": "6a", "017": "6b", "018": "6b", "019": "6b", "020": "7a", "021": "7a", "022": "7a", "023": "7a", "024": "7a", "025": "7a", "026": "7a", "027": "7a", "050": "5a", "051": "5a", "052": "5a", "053": "5a", "054": "5b", "056": "4b", "057": "5a", "058": "4b", "059": "4b", "030": "5b", "031": "5b", "032": "5b", "033": "5a", "034": "4b", "035": "5b", "036": "5a", "037": "5a", "038": "6a", "039": "6a", "040": "6a", "041": "6a", "042": "6a", "043": "5b", "044": "5b", "045": "5b", "046": "5a", "047": "4b", "048": "5a", "049": "5a", "716": "7b", "717": "7b", "718": "7b", "719": "7b", "720": "7b", "721": "7b", "722": "7b", "723": "7a", "724": "7a", "725": "7a", "726": "7a", "727": "7a", "728": "7a", "729": "7b", "700": "9a", "701": "9a", "703": "9a", "704": "9a", "705": "8b", "706": "8b", "707": "9a", "708": "9a", "710": "9a", "711": "8b", "712": "8b", "713": "8b", "714": "8b", "832": "6b", "833": "6a", "834": "5b", "835": "5a", "836": "6b", "837": "6b", "838": "5a"};
+
+async function lookupZone(zip) {
+  // Check local cache first
+  const cache = JSON.parse(localStorage.getItem('bloom_zip_cache') || '{}');
+  if (cache[zip]) return cache[zip];
+
+  // Look up by 3-digit prefix
+  const prefix = zip.slice(0, 3);
+  const z = ZIP_ZONE_MAP[prefix] || null;
+
+  if (z) {
+    cache[zip] = z;
+    localStorage.setItem('bloom_zip_cache', JSON.stringify(cache));
+  }
+  return z;
+}
+
+// ── CORE: EXTRACT PLANTS + LOOKUP BLOOM DATA ──────────────────────────────────
+async function extractAndLookup(input) {
+  showStatus('lookup-status', 'loading', 'Identifying plant names…');
+
+  let extractPrompt;
+  let messages;
+
+  if (input.type === 'image') {
+    messages = [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: input.mediaType, data: input.base64 }},
+        { type: 'text', text: 'Extract all plant names from this image. Return ONLY a JSON array of strings with the plant names. No other text, no markdown, no explanation. Example: ["Black-eyed Susan", "Coneflower"]' }
+      ]
+    }];
+  } else if (input.type === 'text') {
+    messages = [{
+      role: 'user',
+      content: `Extract all plant names from this text. Return ONLY a JSON array of strings. No other text, no markdown.\n\nText:\n${input.text.slice(0, 8000)}`
+    }];
+  } else if (input.type === 'url') {
+    messages = [{
+      role: 'user',
+      content: `Visit this URL and extract all plant names listed on the page: ${input.url}\n\nReturn ONLY a JSON array of plant name strings. No other text, no markdown.`
+    }];
+  }
+
+  let plants = [];
+  try {
+    const raw = await callClaude(messages, 1000, input.type === 'url');
+    plants = JSON.parse(raw.trim().replace(/```json|```/g, '').trim());
+  } catch(e) {
+    showStatus('lookup-status', 'error', 'Could not identify plant names. Try a clearer photo or different file.');
+    return;
+  }
+
+  if (!plants || plants.length === 0) {
+    showStatus('lookup-status', 'error', 'No plant names found. Make sure the image or file contains a plant list.');
+    return;
+  }
+
+  showStatus('lookup-status', 'loading', `Found ${plants.length} plants. Looking up bloom data for Zone ${zone}…`);
+
+  // Look up bloom data for all plants
+  let bloomData = [];
+  try {
+    const bloomRaw = await callClaude([{
+      role: 'user',
+      content: `For each plant below, provide bloom data specifically for USDA Hardiness Zone ${zone}.
+
+Return ONLY a JSON array. No other text, no markdown.
+
+Each item must have:
+- "name": the plant name as given
+- "bloomMonths": array of month numbers 1-12 when it blooms in Zone ${zone}. Empty array [] if it doesn't flower or is unknown.
+- "color": primary flower color. Use only: white, yellow, orange, red, pink, purple, blue, lavender, magenta, green, mixed. Use "unknown" if unsure.
+- "light": one of "full sun", "part sun", "shade", or "any"
+- "soil": one of "dry", "medium", "wet", or "any"
+- "known": true if you have reliable data, false if you're uncertain
+
+Plants: ${plants.join(', ')}`
+    }], 2000);
+    bloomData = JSON.parse(bloomRaw.trim().replace(/```json|```/g, '').trim());
+  } catch(e) {
+    showStatus('lookup-status', 'error', 'Could not look up bloom data. Please try again.');
+    return;
+  }
+
+  lookupResults = bloomData;
+  showStatus('lookup-status', 'success', `Found bloom data for ${bloomData.filter(p=>p.known).length} of ${bloomData.length} plants.`);
+  renderLookupCalendar(bloomData);
+}
+
+// ── RENDER LOOKUP CALENDAR ────────────────────────────────────────────────────
+function renderLookupCalendar(plants) {
+  document.getElementById('lookup-results').style.display = 'block';
+  document.getElementById('result-count').textContent = `${plants.length} plant${plants.length!==1?'s':''} found`;
+
+  const grid = document.getElementById('lookup-grid');
+  grid.style.gridTemplateColumns = '160px repeat(12,1fr)';
+  grid.innerHTML = '';
+
+  // Header row
+  const eh = document.createElement('div'); eh.className='cell'; grid.appendChild(eh);
+  MONTHS.forEach(m => {
+    const h = document.createElement('div'); h.className='cell header-cell'; h.textContent=m; grid.appendChild(h);
+  });
+
+  const usedColors = new Set();
+  const myMonths = getMyGardenMonths();
+
+  plants.forEach(plant => {
+    // Label cell with favorite button
+    const label = document.createElement('div');
+    label.className = 'cell plant-label';
+    if (!plant.known) label.classList.add('unknown-label');
+
+    const favBtn = document.createElement('button');
+    favBtn.className = 'fav-btn';
+    const isFav = favorites.some(f => f.name === plant.name);
+    favBtn.textContent = isFav ? '★' : '☆';
+    favBtn.classList.toggle('active', isFav);
+    favBtn.title = isFav ? 'Remove from my garden' : 'Save to my garden';
+    favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(plant, favBtn); };
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = plant.name;
+    label.appendChild(favBtn);
+    label.appendChild(nameSpan);
+    grid.appendChild(label);
+
+    // Bloom cells
+    const col = COLOR_MAP[plant.color] || COLOR_MAP.unknown;
+    const bloomSet = new Set(plant.bloomMonths || []);
+    if (plant.known) usedColors.add(plant.color);
+
+    for (let m = 1; m <= 12; m++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell bloom-cell';
+      if (bloomSet.has(m) && plant.known) {
+        cell.style.background = col.bg;
+        cell.style.border = `1px solid ${col.border}`;
+        // Highlight if fills a gap in my garden
+        if (myMonths.size > 0 && !myMonths.has(m)) {
+          cell.classList.add('gap-fill');
+          cell.title = `${plant.name} fills your ${MONTHS[m-1]} gap!`;
+        } else {
+          cell.title = `${plant.name} blooms in ${MONTHS[m-1]}`;
+        }
+      } else if (!plant.known) {
+        cell.style.background = '#f3f4f6';
+      }
+      grid.appendChild(cell);
+    }
+  });
+
+  renderLegend('lookup-legend', usedColors);
+  renderGapCallouts('gap-callouts', plants, myMonths);
+}
+
+// ── FAVORITES ─────────────────────────────────────────────────────────────────
+function toggleFavorite(plant, btn) {
+  const idx = favorites.findIndex(f => f.name === plant.name);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+    btn.textContent = '☆';
+    btn.classList.remove('active');
+    btn.title = 'Save to my garden';
+  } else {
+    favorites.push(plant);
+    btn.textContent = '★';
+    btn.classList.add('active');
+    btn.title = 'Remove from my garden';
+  }
+  localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
+}
+
+function clearGarden() {
+  if (!confirm('Remove all plants from your garden?')) return;
+  favorites = [];
+  localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
+  renderGarden();
+}
+
+function getMyGardenMonths() {
+  const months = new Set();
+  favorites.forEach(p => (p.bloomMonths||[]).forEach(m => months.add(m)));
+  return months;
+}
+
+// ── RENDER MY GARDEN ──────────────────────────────────────────────────────────
+function renderGarden() {
+  if (favorites.length === 0) {
+    document.getElementById('garden-empty').style.display = 'block';
+    document.getElementById('garden-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('garden-empty').style.display = 'none';
+  document.getElementById('garden-content').style.display = 'block';
+  document.getElementById('garden-count').textContent = `${favorites.length} plant${favorites.length!==1?'s':''} in your garden`;
+
+  const grid = document.getElementById('garden-grid');
+  grid.style.gridTemplateColumns = '160px repeat(12,1fr)';
+  grid.innerHTML = '';
+
+  const eh = document.createElement('div'); eh.className='cell'; grid.appendChild(eh);
+  MONTHS.forEach(m => {
+    const h = document.createElement('div'); h.className='cell header-cell'; h.textContent=m; grid.appendChild(h);
+  });
+
+  const usedColors = new Set();
+  favorites.forEach(plant => {
+    const label = document.createElement('div');
+    label.className = 'cell plant-label';
+
+    const favBtn = document.createElement('button');
+    favBtn.className = 'fav-btn active';
+    favBtn.textContent = '★';
+    favBtn.title = 'Remove from my garden';
+    favBtn.onclick = () => { toggleFavoriteByName(plant.name); renderGarden(); };
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = plant.name;
+    label.appendChild(favBtn);
+    label.appendChild(nameSpan);
+    grid.appendChild(label);
+
+    const col = COLOR_MAP[plant.color] || COLOR_MAP.unknown;
+    const bloomSet = new Set(plant.bloomMonths || []);
+    usedColors.add(plant.color);
+
+    for (let m = 1; m <= 12; m++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell bloom-cell mine';
+      if (bloomSet.has(m)) {
+        cell.style.background = col.bg;
+        cell.style.border = `1px solid ${col.border}`;
+        cell.title = `${plant.name} — ${MONTHS[m-1]}`;
+      }
+      grid.appendChild(cell);
+    }
+  });
+
+  renderLegend('garden-legend', usedColors);
+}
+
+function toggleFavoriteByName(name) {
+  const idx = favorites.findIndex(f => f.name === name);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+    localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
+  }
+}
+
+// ── RENDER COMPARE ────────────────────────────────────────────────────────────
+function renderCompare() {
+  if (favorites.length === 0 || lookupResults.length === 0) {
+    document.getElementById('compare-empty').style.display = 'block';
+    document.getElementById('compare-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('compare-empty').style.display = 'none';
+  document.getElementById('compare-content').style.display = 'block';
+
+  const myMonths = getMyGardenMonths();
+
+  // Sort lookup results: gap-fillers first
+  const sorted = [...lookupResults].sort((a, b) => {
+    const aGaps = (a.bloomMonths||[]).filter(m => !myMonths.has(m)).length;
+    const bGaps = (b.bloomMonths||[]).filter(m => !myMonths.has(m)).length;
+    return bGaps - aGaps;
+  });
+
+  const allPlants = [
+    ...favorites.map(p => ({...p, layer:'mine'})),
+    ...sorted.filter(p => !favorites.some(f=>f.name===p.name)).map(p => ({...p, layer:'new'}))
+  ];
+
+  document.getElementById('compare-count').textContent =
+    `${favorites.length} your plants + ${sorted.length} new plants`;
+
+  const grid = document.getElementById('compare-grid');
+  grid.style.gridTemplateColumns = '160px repeat(12,1fr)';
+  grid.innerHTML = '';
+
+  const eh = document.createElement('div'); eh.className='cell'; grid.appendChild(eh);
+  MONTHS.forEach(m => {
+    const h = document.createElement('div'); h.className='cell header-cell'; h.textContent=m; grid.appendChild(h);
+  });
+
+  const usedColors = new Set();
+
+  // Section: my garden
+  const myHeader = document.createElement('div');
+  myHeader.style.cssText = 'grid-column:1/-1;padding:6px 4px 2px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#4a7c2f;';
+  myHeader.textContent = '★ Your garden';
+  grid.appendChild(myHeader);
+
+  favorites.forEach(plant => renderCompareRow(grid, plant, 'mine', myMonths, usedColors));
+
+  // Section: new plants
+  const newHeader = document.createElement('div');
+  newHeader.style.cssText = 'grid-column:1/-1;padding:10px 4px 2px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#1a56a8;';
+  newHeader.textContent = '✦ New plants — sorted by gap-filling value';
+  grid.appendChild(newHeader);
+
+  sorted.filter(p => !favorites.some(f=>f.name===p.name)).forEach(plant => {
+    renderCompareRow(grid, plant, 'new', myMonths, usedColors);
+  });
+
+  renderLegend('compare-legend', usedColors);
+  renderGapCallouts('compare-gap-callouts', sorted, myMonths);
+}
+
+function renderCompareRow(grid, plant, layer, myMonths, usedColors) {
+  const label = document.createElement('div');
+  label.className = 'cell plant-label';
+
+  if (layer === 'new') {
+    const favBtn = document.createElement('button');
+    favBtn.className = 'fav-btn';
+    const isFav = favorites.some(f => f.name === plant.name);
+    favBtn.textContent = isFav ? '★' : '☆';
+    favBtn.classList.toggle('active', isFav);
+    favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(plant, favBtn); };
+    label.appendChild(favBtn);
+  }
+
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = plant.name;
+  label.appendChild(nameSpan);
+  grid.appendChild(label);
+
+  const col = COLOR_MAP[plant.color] || COLOR_MAP.unknown;
+  const bloomSet = new Set(plant.bloomMonths || []);
+  if (plant.known !== false) usedColors.add(plant.color);
+
+  for (let m = 1; m <= 12; m++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell bloom-cell';
+    if (bloomSet.has(m)) {
+      cell.style.background = col.bg;
+      cell.style.border = `1px solid ${col.border}`;
+      if (layer === 'new' && !myMonths.has(m)) {
+        cell.style.boxShadow = '0 0 0 2px #f59e0b';
+        cell.title = `${plant.name} fills your ${MONTHS[m-1]} gap!`;
+      } else {
+        cell.title = `${plant.name} — ${MONTHS[m-1]}`;
+      }
+      if (layer === 'mine') cell.style.opacity = '1';
+      if (layer === 'new') cell.style.opacity = '0.75';
+    }
+    grid.appendChild(cell);
+  }
+}
+
+// ── GAP CALLOUTS ──────────────────────────────────────────────────────────────
+function renderGapCallouts(elId, newPlants, myMonths) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  if (myMonths.size === 0) return;
+
+  // Find months with no coverage in my garden
+  const gapMonths = [];
+  for (let m = 1; m <= 12; m++) {
+    if (!myMonths.has(m)) gapMonths.push(m);
+  }
+  if (gapMonths.length === 0) {
+    el.innerHTML = '<div class="gap-callout" style="background:#e6f4e6;border-color:#86efac"><strong style="color:#166534">✓ Great coverage!</strong> Your garden has plants blooming every month.</div>';
+    return;
+  }
+
+  // Find new plants that fill each gap month
+  gapMonths.forEach(m => {
+    const fillers = newPlants.filter(p => p.known && (p.bloomMonths||[]).includes(m));
+    if (fillers.length > 0) {
+      const div = document.createElement('div');
+      div.className = 'gap-callout';
+      div.innerHTML = `<strong>Nothing blooms in ${MONTHS[m-1]}</strong> in your garden. These would help: ${fillers.slice(0,3).map(p=>p.name).join(', ')}${fillers.length>3?' and more':''}`;
+      el.appendChild(div);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'gap-callout';
+      div.innerHTML = `<strong>Nothing blooms in ${MONTHS[m-1]}</strong> in your garden or on this list.`;
+      el.appendChild(div);
+    }
+  });
+}
+
+// ── LEGEND ────────────────────────────────────────────────────────────────────
+function renderLegend(elId, usedColors) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  [...usedColors].filter(c => c && c !== 'unknown').sort().forEach(c => {
+    const col = COLOR_MAP[c];
+    if (!col) return;
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${col.bg};border:1px solid ${col.border}"></div><span>${c.charAt(0).toUpperCase()+c.slice(1)}</span>`;
+    el.appendChild(item);
+  });
+  if (usedColors.size > 0) {
+    const gapItem = document.createElement('div');
+    gapItem.className = 'legend-item';
+    gapItem.innerHTML = `<div class="legend-dot" style="background:#fef08a;border:2px solid #f59e0b"></div><span>Fills a gap</span>`;
+    el.appendChild(gapItem);
+  }
+}
+
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `status show ${type}`;
+  el.textContent = msg;
+}
+
+function clearLookup() {
+  lookupResults = [];
+  document.getElementById('lookup-results').style.display = 'none';
+  document.getElementById('lookup-status').className = 'status';
+  document.getElementById('url-input').value = '';
+  document.getElementById('file-input').value = '';
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function extractPdfText(base64) {
+  // Load pdf.js dynamically
+  if (!window.pdfjsLib) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const pdf = await pdfjsLib.getDocument({data: bytes}).promise;
+  let text = '';
+  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(s => s.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function callClaude(messages, maxTokens=1000, useWebSearch=false) {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: maxTokens,
+    messages,
+  };
+  if (useWebSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  }
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Request failed (${res.status})`);
+  }
+  const data = await res.json();
+  // Handle both text and tool_use blocks
+  const text = (data.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+  return text;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+updateZoneDisplay();
+if (!zone) {
+  setTimeout(showZoneModal, 600);
+}
+
+// Wire up file input and URL button after DOM is ready
+document.getElementById('file-input').addEventListener('change', function() {
+  handleFile(this.files[0]);
+});
+document.getElementById('url-go-btn').addEventListener('click', handleUrl);
+document.getElementById('url-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleUrl();
+});
+</script>
+</body>
+</html>
