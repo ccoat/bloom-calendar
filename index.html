@@ -515,10 +515,6 @@ function hideZoneModal() {
   document.getElementById('zone-modal').classList.remove('show');
 }
 
-document.getElementById('zone-modal').addEventListener('click', function(e) {
-  if (e.target === this) hideZoneModal();
-});
-
 async function saveZone() {
   const zip = document.getElementById('zip-input').value.trim();
   if (!/^\d{5}$/.test(zip)) {
@@ -1075,38 +1071,40 @@ async function callClaude(messages, maxTokens=1000, useWebSearch=false) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-updateZoneDisplay();
-if (!zone) setTimeout(showZoneModal, 600);
+window.addEventListener('load', function() {
+  updateZoneDisplay();
+  if (!zone) setTimeout(showZoneModal, 600);
 
-// Tabs
-document.getElementById('tab-lookup').addEventListener('click', () => switchTab('lookup'));
-document.getElementById('tab-mygarden').addEventListener('click', () => switchTab('mygarden'));
-document.getElementById('tab-compare').addEventListener('click', () => switchTab('compare'));
+  // Tabs
+  document.getElementById('tab-lookup').addEventListener('click', () => switchTab('lookup'));
+  document.getElementById('tab-mygarden').addEventListener('click', () => switchTab('mygarden'));
+  document.getElementById('tab-compare').addEventListener('click', () => switchTab('compare'));
 
-// Upload zone
-document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('file-input').click());
-document.getElementById('drop-zone').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); });
-document.getElementById('drop-zone').addEventListener('dragleave', () => document.getElementById('drop-zone').classList.remove('drag'));
-document.getElementById('drop-zone').addEventListener('drop', e => { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+  // Upload zone
+  document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('drop-zone').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); });
+  document.getElementById('drop-zone').addEventListener('dragleave', () => document.getElementById('drop-zone').classList.remove('drag'));
+  document.getElementById('drop-zone').addEventListener('drop', e => { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
 
-// File input
-document.getElementById('file-input').addEventListener('change', function() { handleFile(this.files[0]); });
+  // File input
+  document.getElementById('file-input').addEventListener('change', function() { handleFile(this.files[0]); });
 
-// URL input
-document.getElementById('url-go-btn').addEventListener('click', handleUrl);
-document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleUrl(); });
+  // URL input
+  document.getElementById('url-go-btn').addEventListener('click', handleUrl);
+  document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleUrl(); });
 
-// Lookup results
-document.getElementById('clear-lookup-btn').addEventListener('click', clearLookup);
+  // Lookup results
+  document.getElementById('clear-lookup-btn').addEventListener('click', clearLookup);
 
-// Garden
-document.getElementById('clear-garden-btn').addEventListener('click', clearGarden);
+  // Garden
+  document.getElementById('clear-garden-btn').addEventListener('click', clearGarden);
 
-// Zone modal
-document.getElementById('zone-display').addEventListener('click', showZoneModal);
-document.getElementById('save-zone-btn').addEventListener('click', saveZone);
-document.getElementById('zip-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveZone(); });
-document.getElementById('zone-modal').addEventListener('click', function(e) { if (e.target === this) hideZoneModal(); });
+  // Zone modal
+  document.getElementById('zone-display').addEventListener('click', showZoneModal);
+  document.getElementById('save-zone-btn').addEventListener('click', saveZone);
+  document.getElementById('zip-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveZone(); });
+  document.getElementById('zone-modal').addEventListener('click', function(e) { if (e.target === this) hideZoneModal(); });
+});
 </script>
 </body>
 </html>
