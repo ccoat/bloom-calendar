@@ -368,17 +368,17 @@ header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
     <h1>🌸 Bloom Calendar</h1>
     <p>Know when your plants flower</p>
   </div>
-  <button class="zone-badge" onclick="showZoneModal()" id="zone-display">Set your zone →</button>
+  <button class="zone-badge" id="zone-display">Set your zone →</button>
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('lookup')">
+  <div class="tab active" id="tab-lookup">
     <span class="tab-icon">🔍</span>Look up
   </div>
-  <div class="tab" onclick="switchTab('mygarden')">
+  <div class="tab" id="tab-mygarden">
     <span class="tab-icon">🌿</span>My garden
   </div>
-  <div class="tab" onclick="switchTab('compare')">
+  <div class="tab" id="tab-compare">
     <span class="tab-icon">✨</span>Compare
   </div>
 </div>
@@ -390,7 +390,7 @@ header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
     <p>Photo, PDF, or paste a URL from a nursery website. We'll look up bloom times and colors for each plant.</p>
   </div>
 
-  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+  <div class="upload-zone" id="drop-zone">
     <span class="upload-icon">📷</span>
     <h3>Tap to upload</h3>
     <p>Photo of a plant list, nursery tag, or PDF catalog</p>
@@ -409,7 +409,7 @@ header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
   <div id="lookup-results" style="display:none; margin-top:1rem;">
     <div class="section-label">
       <span id="result-count">0 plants found</span>
-      <button class="btn btn-outline btn-sm" onclick="clearLookup()">Clear</button>
+      <button class="btn btn-outline btn-sm" id="clear-lookup-btn">Clear</button>
     </div>
     <div class="calendar-wrap">
       <div class="month-grid" id="lookup-grid"></div>
@@ -428,7 +428,7 @@ header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
   <div id="garden-content" style="display:none">
     <div class="section-label">
       <span id="garden-count"></span>
-      <button class="btn btn-outline btn-sm" onclick="clearGarden()">Clear all</button>
+      <button class="btn btn-outline btn-sm" id="clear-garden-btn">Clear all</button>
     </div>
     <div class="calendar-wrap">
       <div class="month-grid" id="garden-grid"></div>
@@ -461,9 +461,8 @@ header p { font-size: 0.75rem; color: #a8d080; margin-top: 2px; }
   <div class="modal">
     <h2>What's your zip code?</h2>
     <p>We use this to show bloom times accurate for your region. Saved on this device.</p>
-    <input type="text" id="zip-input" placeholder="e.g. 60601" maxlength="5" inputmode="numeric"
-      onkeydown="if(event.key==='Enter') saveZone()">
-    <button class="btn btn-primary" onclick="saveZone()">Save</button>
+    <input type="text" id="zip-input" placeholder="e.g. 60601" maxlength="5" inputmode="numeric">
+    <button class="btn btn-primary" id="save-zone-btn">Save</button>
     <p class="modal-hint" id="zone-result"></p>
   </div>
 </div>
@@ -1032,18 +1031,37 @@ async function callClaude(messages, maxTokens=1000, useWebSearch=false) {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 updateZoneDisplay();
-if (!zone) {
-  setTimeout(showZoneModal, 600);
-}
+if (!zone) setTimeout(showZoneModal, 600);
 
-// Wire up file input and URL button after DOM is ready
-document.getElementById('file-input').addEventListener('change', function() {
-  handleFile(this.files[0]);
-});
+// Tabs
+document.getElementById('tab-lookup').addEventListener('click', () => switchTab('lookup'));
+document.getElementById('tab-mygarden').addEventListener('click', () => switchTab('mygarden'));
+document.getElementById('tab-compare').addEventListener('click', () => switchTab('compare'));
+
+// Upload zone
+document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('drop-zone').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); });
+document.getElementById('drop-zone').addEventListener('dragleave', () => document.getElementById('drop-zone').classList.remove('drag'));
+document.getElementById('drop-zone').addEventListener('drop', e => { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+
+// File input
+document.getElementById('file-input').addEventListener('change', function() { handleFile(this.files[0]); });
+
+// URL input
 document.getElementById('url-go-btn').addEventListener('click', handleUrl);
-document.getElementById('url-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') handleUrl();
-});
+document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleUrl(); });
+
+// Lookup results
+document.getElementById('clear-lookup-btn').addEventListener('click', clearLookup);
+
+// Garden
+document.getElementById('clear-garden-btn').addEventListener('click', clearGarden);
+
+// Zone modal
+document.getElementById('zone-display').addEventListener('click', showZoneModal);
+document.getElementById('save-zone-btn').addEventListener('click', saveZone);
+document.getElementById('zip-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveZone(); });
+document.getElementById('zone-modal').addEventListener('click', function(e) { if (e.target === this) hideZoneModal(); });
 </script>
 </body>
 </html>
